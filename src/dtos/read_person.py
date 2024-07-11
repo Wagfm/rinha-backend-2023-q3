@@ -6,4 +6,4 @@ class ReadPersonDto(BaseModel):
     apelido: str
     nome: str
     nascimento: str
-    stack: list[str]
+    stack: list[str] | None

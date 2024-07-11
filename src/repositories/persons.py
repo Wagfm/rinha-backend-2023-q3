@@ -12,14 +12,18 @@ from models.person import PersonModel
 
 class PersonsRepository:
     def __init__(self):
-        self._connection_info = {
-            "host": os.environ["POSTGRES_HOST"],
-            "port": os.environ["POSTGRES_PORT"],
-            "dbname": os.environ["POSTGRES_DATABASE"],
-            "user": os.environ["POSTGRES_USER"],
-            "password": os.environ["POSTGRES_PASSWORD"],
-            "connect_timeout": 10,
-        }
+        host = os.environ["POSTGRES_HOST"]
+        port = os.environ["POSTGRES_PORT"]
+        dbname = os.environ["POSTGRES_DATABASE"]
+        user = os.environ["POSTGRES_USER"]
+        password = os.environ["POSTGRES_PASSWORD"]
+        self._connection_info = f"""
+            host={host}
+            port={port}
+            dbname={dbname}
+            user={user}
+            password={password}
+        """
         self._cursor = None
         self._setup_table()
 
@@ -27,11 +31,12 @@ class PersonsRepository:
     def _with_connection(function: Callable) -> Callable:
         @wraps(function)
         def with_connection(self, *args, **kwargs):
+            connection = psycopg.connect(self._connection_info, row_factory=DictRowFactory)
             try:
-                connection = psycopg.connect(**self._connection_info, row_factory=DictRowFactory)
                 with connection.cursor() as cursor:
                     self._cursor = cursor
                     result = function(self, *args, **kwargs)
+                    self._cursor = None
             except psycopg.errors.IntegrityError:
                 connection.rollback()
                 raise
@@ -71,7 +76,7 @@ class PersonsRepository:
     @_with_connection
     def get_person_by_search_term(self, search_term: str) -> list[PersonModel]:
         get_person_by_search_term_query = """
-            SELECT * FROM persons WHERE searchable ILIKE %s;
+            SELECT * FROM persons WHERE searchable ILIKE %s LIMIT 50;
         """
         parameters = [f"%{search_term}%"]
         items = self._cursor.execute(get_person_by_search_term_query.encode(), parameters)
@@ -107,7 +112,7 @@ class PersonsRepository:
                 name VARCHAR(100) NOT NULL,
                 nickname VARCHAR(32) UNIQUE NOT NULL,
                 birth_date DATE NOT NULL,
-                stack JSON NOT NULL,
+                stack JSON,
                 searchable TEXT GENERATED ALWAYS AS ( generate_searchable(name, nickname, stack) ) STORED 
             );
         """)
