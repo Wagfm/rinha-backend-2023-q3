@@ -26,7 +26,7 @@ class PersonsRepository:
             password={password}
         """
         self._cursor = None
-        self._pool = ConnectionPool(self._connection_info, min_size=10, max_size=60, open=True)
+        self._pool = ConnectionPool(self._connection_info, min_size=20, max_size=60, open=True)
         self._setup_table()
 
     @staticmethod
