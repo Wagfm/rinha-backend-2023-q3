@@ -4,6 +4,7 @@ from functools import wraps
 from typing import Callable
 
 import psycopg
+from psycopg_pool import ConnectionPool
 
 from database.row_factory import DictRowFactory
 from dtos.create_person import CreatePersonDto
@@ -25,18 +26,19 @@ class PersonsRepository:
             password={password}
         """
         self._cursor = None
+        self._pool = ConnectionPool(self._connection_info, min_size=10, max_size=60, open=True)
         self._setup_table()
 
     @staticmethod
     def _with_connection(function: Callable) -> Callable:
         @wraps(function)
-        def with_connection(self, *args, **kwargs):
-            connection = psycopg.connect(self._connection_info, row_factory=DictRowFactory)
+        def with_connection(self: "PersonsRepository", *args, **kwargs):
             try:
-                with connection.cursor() as cursor:
-                    self._cursor = cursor
-                    result = function(self, *args, **kwargs)
-                    self._cursor = None
+                with self._pool.connection() as connection:
+                    with connection.cursor(row_factory=DictRowFactory) as cursor:
+                        self._cursor = cursor
+                        result = function(self, *args, **kwargs)
+                        self._cursor = None
             except psycopg.errors.IntegrityError:
                 connection.rollback()
                 raise
