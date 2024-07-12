@@ -22,7 +22,7 @@ services:
         deploy:
             resources:
                 limits:
-                    cpus: 0.35
+                    cpus: 0.38
                     memory: 0.75GB
 
     api2:
@@ -35,7 +35,7 @@ services:
     postgres:
         container_name: rinha-backend-postgres
         image: postgres:12.19-alpine
-        command: postgres -c 'max_connections=400' -c 'log_error_verbosity=terse'
+        command: postgres -c 'max_connections=400' -c 'log_statement=none'
         environment:
             PGUSER: rinha-backend
             POSTGRES_USER: rinha-backend
@@ -51,7 +51,7 @@ services:
         deploy:
             resources:
                 limits:
-                    cpus: 0.66
+                    cpus: 0.60
                     memory: 1.0GB
 
     nginx:
