@@ -18,4 +18,4 @@ COPY . .
 
 EXPOSE 5000/tcp
 
-CMD [ "gunicorn", "--preload", "src.app:app" ]
+CMD [ "gunicorn", "--preload", "--log-level=error", "--worker-class=gevent", "src.app:app" ]

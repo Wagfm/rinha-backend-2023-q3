@@ -12,8 +12,6 @@ services:
             POSTGRES_USER: rinha-backend
             POSTGRES_PASSWORD: rinha123
             POSTGRES_DATABASE: persons_db
-        volumes:
-            - .:/app
         depends_on:
             postgres:
                 condition: service_healthy
@@ -22,7 +20,7 @@ services:
         deploy:
             resources:
                 limits:
-                    cpus: 0.38
+                    cpus: 0.44
                     memory: 0.75GB
 
     api2:
@@ -35,7 +33,6 @@ services:
     postgres:
         container_name: rinha-backend-postgres
         image: postgres:12.19-alpine
-        command: postgres -c 'max_connections=400' -c 'log_statement=none' -c 'log_error_verbosity=terse'
         environment:
             PGUSER: rinha-backend
             POSTGRES_USER: rinha-backend
@@ -47,11 +44,13 @@ services:
             timeout: 5s
             retries: 20
             start_period: 10s
+        volumes:
+            - ./postgresql.conf:/docker-entrypoint-initdb.d/postgresql.conf
         network_mode: host
         deploy:
             resources:
                 limits:
-                    cpus: 0.60
+                    cpus: 0.50
                     memory: 1.0GB
 
     nginx:
@@ -66,5 +65,5 @@ services:
         deploy:
             resources:
                 limits:
-                    cpus: 0.14
+                    cpus: 0.12
                     memory: 0.5GB

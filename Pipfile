@@ -9,6 +9,7 @@ pydantic = "*"
 gunicorn = "*"
 pip = "*"
 psycopg = {extras = ["binary", "pool"], version = "*"}
+gevent = "*"
 
 [dev-packages]
 

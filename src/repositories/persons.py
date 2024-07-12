@@ -1,5 +1,7 @@
 import json
+import logging
 import os
+from datetime import datetime
 from functools import wraps
 from typing import Callable
 
@@ -26,7 +28,9 @@ class PersonsRepository:
             password={password}
         """
         self._cursor = None
-        self._pool = ConnectionPool(self._connection_info, min_size=20, max_size=60, open=True)
+        logging.getLogger("psycopg.pool").setLevel(logging.ERROR)
+        logging.getLogger("psycopg.pool").disabled = True
+        self._pool = ConnectionPool(self._connection_info, min_size=20, max_size=150, open=True)
         self._setup_table()
 
     @staticmethod
@@ -54,26 +58,32 @@ class PersonsRepository:
     @_with_connection
     def create_person(self, dto: CreatePersonDto) -> PersonModel | None:
         create_person_query = """
-            INSERT INTO persons (nickname, name, birth_date, stack) VALUES (%s, %s, %s, %s) RETURNING *;
+            INSERT INTO persons (nickname, name, birth_date, stack) VALUES (%s, %s, %s, %s) RETURNING id;
         """
         parameters = [dto.apelido, dto.nome, dto.nascimento, json.dumps(dto.stack)]
         items = self._cursor.execute(create_person_query.encode(), parameters)
         inserted_person = items.fetchone()
         if inserted_person is None:
             return None
-        return PersonModel.from_dict(inserted_person)
+        return PersonModel.from_dict(
+            {
+                **inserted_person,
+                "name": dto.nome, "birth_date": datetime.strptime(dto.nascimento, "%Y-%m-%d"),
+                "stack": dto.stack, "nickname": dto.apelido
+            }
+        )
 
     @_with_connection
     def get_person_by_id(self, id: str) -> PersonModel | None:
         get_person_by_id_query = """
-            SELECT * FROM persons WHERE id = %s;
+            SELECT name, nickname, birth_date, stack FROM persons WHERE id = %s;
         """
         parameters = [id]
         items = self._cursor.execute(get_person_by_id_query.encode(), parameters)
         found_person = items.fetchone()
         if found_person is None:
             return None
-        return PersonModel.from_dict(found_person)
+        return PersonModel.from_dict({**found_person, "id": id})
 
     @_with_connection
     def get_person_by_search_term(self, search_term: str) -> list[PersonModel]:

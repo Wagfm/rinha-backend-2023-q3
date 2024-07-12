@@ -47,7 +47,7 @@ class PersonsController:
         except Exception as exception:
             return self._build_json_response({"message": str(exception)}, 500)
 
-    def read_count(self):
+    def read_count(self) -> Response:
         n = self._service.read_count()
         return self._build_json_response(n, 200, "text/plain")
 
